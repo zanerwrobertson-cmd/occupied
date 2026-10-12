@@ -2,10 +2,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 const KEY = 'occupied.favorites.v1';
-const DEFAULT_FAVORITES = ['weldon', 'taylor', 'rec'];
+const DEFAULT_FAVORITES: string[] = [];
 
 type FavoritesState = {
   favorites: string[];
+  /** Saved favorites have been read from the device */
+  loaded: boolean;
   isFavorite: (id: string) => boolean;
   toggle: (id: string) => void;
 };
@@ -37,8 +39,8 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<FavoritesState>(
-    () => ({ favorites, isFavorite: (id) => favorites.includes(id), toggle }),
-    [favorites, toggle],
+    () => ({ favorites, loaded, isFavorite: (id) => favorites.includes(id), toggle }),
+    [favorites, loaded, toggle],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

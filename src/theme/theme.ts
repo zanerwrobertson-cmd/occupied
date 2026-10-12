@@ -1,6 +1,7 @@
 import { useColorScheme } from 'react-native';
 
-import type { Level } from '@/data/types';
+import type { Level, Rated } from '@/data/types';
+import { STATUS_TEXT } from '@/lib/levels';
 
 export type Theme = {
   bg: string;
@@ -18,6 +19,7 @@ export type Theme = {
   mapGreen: string;
   mapRiver: string;
   mapRoad: string;
+  mapBuilding: string;
   chipBg: string;
   chipFg: string;
 };
@@ -52,6 +54,7 @@ const light: Theme = {
   mapGreen: '#D7E8CF',
   mapRiver: '#BFD9EE',
   mapRoad: '#FFFFFF',
+  mapBuilding: '#DDD7CC',
   chipBg: 'rgba(255,255,255,0.92)',
   chipFg: '#1A1523',
 };
@@ -72,6 +75,7 @@ const dark: Theme = {
   mapGreen: '#1E2A1E',
   mapRiver: '#1B2A3A',
   mapRoad: '#2A2633',
+  mapBuilding: '#2C2935',
   chipBg: 'rgba(29,26,36,0.92)',
   chipFg: '#F3F0F8',
 };
@@ -90,15 +94,33 @@ const darkLevels: LevelStyle[] = [
   { label: 'Very Busy', bg: '#481818', fg: '#FF9E9E', dot: '#E5484D', solid: '#E5484D', pinFg: '#FFFFFF' },
 ];
 
+/** Grey for No data / Closed / Low activity, and for muting levels when data is stale. */
+const lightNeutral: Omit<LevelStyle, 'label'> = { bg: '#ECEAF0', fg: '#4A4458', dot: '#8C8699', solid: '#8C8699', pinFg: '#FFFFFF' };
+const darkNeutral: Omit<LevelStyle, 'label'> = { bg: '#2A2633', fg: '#C9C2D6', dot: '#7D768A', solid: '#5E5870', pinFg: '#F3F0F8' };
+
 export function useTheme() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const t = scheme === 'dark' ? dark : light;
   const levels = scheme === 'dark' ? darkLevels : lightLevels;
+  const neutral = scheme === 'dark' ? darkNeutral : lightNeutral;
   return {
     scheme,
     t,
     levels,
+    neutral,
     level: (l: Level) => levels[l],
+    /**
+     * Style for a building or zone: its level colours when live, otherwise neutral grey
+     * with the status text. `muted` keeps the level's label and dot but greys the rest.
+     */
+    display: (r: Rated, muted = false): LevelStyle => {
+      const status = r.status ?? 'live';
+      if (status === 'live' && r.level !== undefined) {
+        const s = levels[r.level];
+        return muted ? { ...neutral, label: s.label, dot: s.dot } : s;
+      }
+      return { ...neutral, label: STATUS_TEXT[status === 'live' ? 'nodata' : status] };
+    },
   } as const;
 }
 

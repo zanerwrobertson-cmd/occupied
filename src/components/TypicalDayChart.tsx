@@ -1,6 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import type { Level } from '@/data/types';
 import { DAY_START_HOUR, formatHourLong, formatHourShort, hourIndex } from '@/lib/levels';
 import { font, useTheme } from '@/theme/theme';
 
@@ -9,18 +8,19 @@ const CHART_H = 130;
 export function TypicalDayChart({
   values,
   currentHour,
-  currentLevel,
+  currentLabel,
 }: {
   values: number[];
   currentHour: number;
-  currentLevel: Level;
+  /** Text for the live state, e.g. "Busy" or "Closed" */
+  currentLabel: string;
 }) {
-  const { t, level } = useTheme();
+  const { t } = useTheme();
   const nowI = hourIndex(currentHour);
   const peak = values.indexOf(Math.max(...values));
   const summary =
     `Typical busyness by hour from 7 AM to 11 PM. Usually busiest around ${formatHourLong(DAY_START_HOUR + peak)}.` +
-    (nowI >= 0 ? ` Right now: ${level(currentLevel).label}.` : '');
+    (nowI >= 0 ? ` Right now: ${currentLabel}.` : '');
 
   return (
     <View accessible accessibilityRole="image" accessibilityLabel={summary} style={[styles.card, { backgroundColor: t.surface, borderColor: t.border }]}>

@@ -1,15 +1,18 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import type { Level, Trend } from '@/data/types';
+import type { Level, Rated, Trend } from '@/data/types';
 import { TREND_TEXT } from '@/lib/levels';
 import { font, useTheme } from '@/theme/theme';
 
 import { TrendIcon } from './Icons';
 
-/** Coloured pill with a dot and the level's text label — never colour alone. */
-export function LevelBadge({ level, small }: { level: Level; small?: boolean }) {
-  const { level: style } = useTheme();
-  const s = style(level);
+/**
+ * Coloured pill with a dot and a text label — never colour alone.
+ * Neutral grey for No data / Closed / Low activity; `muted` greys a level when data is stale.
+ */
+export function LevelBadge({ rated, small, muted }: { rated: Rated; small?: boolean; muted?: boolean }) {
+  const { display } = useTheme();
+  const s = display(rated, muted);
   return (
     <View style={[styles.badge, small && styles.badgeSmall, { backgroundColor: s.bg }]}>
       <View style={[styles.dot, { backgroundColor: s.dot }]} />
@@ -18,8 +21,8 @@ export function LevelBadge({ level, small }: { level: Level; small?: boolean }) 
   );
 }
 
-/** 1–4 ascending bars — a second, shape-based cue for the level. */
-export function LevelBars({ level, color, scale = 1 }: { level: Level; color: string; scale?: number }) {
+/** 1–4 ascending bars — a second, shape-based cue for the level. No level → all bars faint. */
+export function LevelBars({ level, color, scale = 1 }: { level?: Level; color: string; scale?: number }) {
   const heights = [6, 9, 12, 15];
   return (
     <View style={[styles.bars, { gap: 2 * scale }]}>
@@ -31,7 +34,7 @@ export function LevelBars({ level, color, scale = 1 }: { level: Level; color: st
             height: h * scale,
             borderRadius: 1.5 * scale,
             backgroundColor: color,
-            opacity: i <= level ? 1 : 0.3,
+            opacity: level !== undefined && i <= level ? 1 : 0.3,
           }}
         />
       ))}

@@ -1,4 +1,4 @@
-import type { Level, Trend } from '@/data/types';
+import type { Building, Level, Status, Trend } from '@/data/types';
 
 /** First hour covered by typicalDay arrays. */
 export const DAY_START_HOUR = 7;
@@ -9,6 +9,19 @@ export const TREND_TEXT: Record<Trend, string> = {
   down: 'Getting quieter',
   steady: 'Steady',
 };
+
+/** Text for the neutral (grey) states — always shown with the colour, never colour alone. */
+export const STATUS_TEXT: Record<Exclude<Status, 'live'>, string> = {
+  nodata: 'No data yet',
+  closed: 'Closed',
+  low: 'Low activity',
+};
+
+/** "Quietest first" order: live levels, then low activity, closed, and no data last. */
+export function quietRank(b: Building): number {
+  if (b.status === 'live') return b.level;
+  return { low: 4, closed: 5, nodata: 6 }[b.status];
+}
 
 /** Map a 0–100 typical-day value onto a Level. */
 export function valueToLevel(v: number): Level {
@@ -29,19 +42,22 @@ export function formatHourShort(hour: number): string {
   return `${h}${hour < 12 ? 'a' : 'p'}`;
 }
 
+/** 24 (closing at midnight) reads as "12 AM". */
 export function formatHourLong(hour: number): string {
-  const h = hour % 12 === 0 ? 12 : hour % 12;
-  return `${h} ${hour < 12 ? 'AM' : 'PM'}`;
+  const hh = hour % 24;
+  const h = hh % 12 === 0 ? 12 : hh % 12;
+  return `${h} ${hh < 12 ? 'AM' : 'PM'}`;
 }
 
-/** "Busier than usual for 2 PM" etc., or null outside charted hours. */
-export function comparedToUsual(level: Level, typicalDay: number[], hour: number): string | null {
+/** "Busier than usual for 2 PM" etc., or null when there's no live level or outside charted hours. */
+export function comparedToUsual(b: Building, hour: number): string | null {
+  if (b.status !== 'live') return null;
   const i = hourIndex(hour);
   if (i < 0) return null;
-  const usual = valueToLevel(typicalDay[i]);
+  const usual = valueToLevel(b.typicalDay[i]);
   const when = formatHourLong(hour);
-  if (level > usual) return `Busier than usual for ${when}`;
-  if (level < usual) return `Quieter than usual for ${when}`;
+  if (b.level > usual) return `Busier than usual for ${when}`;
+  if (b.level < usual) return `Quieter than usual for ${when}`;
   return `About normal for ${when}`;
 }
 

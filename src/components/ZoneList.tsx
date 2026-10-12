@@ -6,8 +6,8 @@ import { font, useTheme } from '@/theme/theme';
 import { LevelBadge } from './Level';
 import { SectionTitle } from './SectionTitle';
 
-/** Floors or sub-areas inside a building, each with its own level. */
-export function ZoneList({ title, zones }: { title: string; zones: Zone[] }) {
+/** Floors or sub-areas inside a building, each with its own level or "Low activity". */
+export function ZoneList({ title, zones, muted }: { title: string; zones: Zone[]; muted?: boolean }) {
   const { t } = useTheme();
   return (
     <View style={styles.section}>
@@ -16,7 +16,7 @@ export function ZoneList({ title, zones }: { title: string; zones: Zone[] }) {
         {zones.map((z, i) => (
           <View key={z.name} style={[styles.row, i > 0 && { borderTopWidth: 1, borderTopColor: t.border }]}>
             <Text style={[styles.name, { color: t.text }]}>{z.name}</Text>
-            <LevelBadge level={z.level} small />
+            <LevelBadge rated={z} small muted={muted} />
           </View>
         ))}
       </View>

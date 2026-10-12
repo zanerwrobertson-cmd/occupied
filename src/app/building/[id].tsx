@@ -5,17 +5,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeftIcon, ClockIcon, StarIcon, TrendIcon } from '@/components/Icons';
 import { LevelBars } from '@/components/Level';
 import { SectionTitle } from '@/components/SectionTitle';
+import { StaleBanner } from '@/components/StaleBanner';
 import { TypicalDayChart } from '@/components/TypicalDayChart';
 import { ZoneList } from '@/components/ZoneList';
-import { comparedToUsual, formatHourLong, minutesAgo, TREND_TEXT, WEEKDAYS } from '@/lib/levels';
+import { todaysHours } from '@/lib/hours';
+import { comparedToUsual, formatHourLong, minutesAgo, TREND_TEXT } from '@/lib/levels';
 import { useFavorites } from '@/state/favorites';
 import { useOccupancy } from '@/state/occupancy';
 import { font, useTheme } from '@/theme/theme';
 
 export default function BuildingDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { t, level } = useTheme();
-  const { getBuilding, snapshot, now } = useOccupancy();
+  const { t, display } = useTheme();
+  const { getBuilding, snapshot, now, stale } = useOccupancy();
   const { isFavorite, toggle } = useFavorites();
   const b = getBuilding(id ?? '');
 
@@ -57,56 +59,72 @@ export default function BuildingDetail() {
             {snapshot && (
               <Text style={[styles.updated, { color: t.text2 }]}>{minutesAgo(snapshot.updatedAt, now)}</Text>
             )}
+            <Text style={[styles.updated, { color: t.text2 }]}>Hours today: {todaysHours(b.hours, date)}</Text>
           </View>
 
+          {stale && <StaleBanner />}
+
           {(() => {
-            const s = level(b.level);
-            const usual = comparedToUsual(b.level, b.typicalDay, hour);
+            const s = display(b, stale);
+            const live = b.status === 'live';
+            const usual = comparedToUsual(b, hour);
             return (
               <View
                 accessible
-                accessibilityLabel={`Right now ${s.label}. ${TREND_TEXT[b.trend]}.${usual ? ` ${usual}.` : ''}`}
+                accessibilityLabel={
+                  `Right now ${s.label}.` + (live ? ` ${TREND_TEXT[b.trend]}.` : '') + (usual ? ` ${usual}.` : '')
+                }
                 style={[styles.hero, { backgroundColor: s.bg }]}
               >
                 <View style={styles.heroTop}>
                   <View style={[styles.heroTile, { backgroundColor: s.solid }]}>
-                    <LevelBars level={b.level} color={s.pinFg} scale={1.9} />
+                    <LevelBars level={live ? b.level : undefined} color={s.pinFg} scale={1.9} />
                   </View>
                   <View>
                     <Text style={[styles.heroKicker, { color: s.fg }]}>Right now</Text>
                     <Text style={[styles.heroLevel, { color: s.fg }]}>{s.label}</Text>
                   </View>
                 </View>
-                <View style={styles.heroLines}>
-                  <View style={styles.heroLine}>
-                    <TrendIcon trend={b.trend} color={s.fg} size={18} />
-                    <Text style={[styles.heroLineText, { color: s.fg }]}>{TREND_TEXT[b.trend]}</Text>
-                  </View>
-                  {usual && (
+                {live && (
+                  <View style={styles.heroLines}>
                     <View style={styles.heroLine}>
-                      <ClockIcon color={s.fg} size={18} />
-                      <Text style={[styles.heroLineText, { color: s.fg }]}>{usual}</Text>
+                      <TrendIcon trend={b.trend} color={s.fg} size={18} />
+                      <Text style={[styles.heroLineText, { color: s.fg }]}>{TREND_TEXT[b.trend]}</Text>
                     </View>
-                  )}
-                </View>
+                    {usual && (
+                      <View style={styles.heroLine}>
+                        <ClockIcon color={s.fg} size={18} />
+                        <Text style={[styles.heroLineText, { color: s.fg }]}>{usual}</Text>
+                      </View>
+                    )}
+                  </View>
+                )}
               </View>
             );
           })()}
 
-          {b.floors && b.floors.length > 0 && <ZoneList title="By floor" zones={b.floors} />}
-          {b.areas && b.areas.length > 0 && <ZoneList title={b.areasHeading ?? 'Areas'} zones={b.areas} />}
+          {/* Floor and area levels only mean something while the building itself has a live reading. */}
+          {b.status === 'live' && b.floors && b.floors.length > 0 && (
+            <ZoneList title="By floor" zones={b.floors} muted={stale} />
+          )}
+          {b.status === 'live' && b.areas && b.areas.length > 0 && (
+            <ZoneList title={b.areasHeading ?? 'Areas'} zones={b.areas} muted={stale} />
+          )}
 
           <View style={styles.section}>
             <View style={styles.chartHead}>
-              <SectionTitle>Typical {WEEKDAYS[date.getDay()]}</SectionTitle>
+              {/* One shared curve for now — say "day", not a weekday, until per-weekday history exists. */}
+              <SectionTitle>Typical day</SectionTitle>
               <Text style={[styles.chartNow, { color: t.text2 }]}>Now · {formatHourLong(hour)}</Text>
             </View>
-            <TypicalDayChart values={b.typicalDay} currentHour={hour} currentLevel={b.level} />
+            <TypicalDayChart values={b.typicalDay} currentHour={hour} currentLabel={display(b).label} />
           </View>
 
-          <Text style={[styles.foot, { color: t.text2 }]}>
-            “{level(b.level).label}” is relative to this building’s normal range, not a headcount.
-          </Text>
+          {b.status === 'live' && (
+            <Text style={[styles.foot, { color: t.text2 }]}>
+              “{display(b).label}” is relative to this building’s normal range, not a headcount.
+            </Text>
+          )}
         </ScrollView>
       )}
     </SafeAreaView>

@@ -9,18 +9,25 @@ import { LevelBadge, TrendLabel } from './Level';
 export function BuildingCard({
   building,
   favorite,
+  muted,
   onPress,
 }: {
   building: Building;
   favorite?: boolean;
+  /** Grey out the level when the data is stale */
+  muted?: boolean;
   onPress: () => void;
 }) {
-  const { t, level } = useTheme();
+  const { t, display } = useTheme();
+  const live = building.status === 'live';
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${building.name}, ${level(building.level).label}, ${TREND_TEXT[building.trend].toLowerCase()}`}
+      accessibilityLabel={
+        `${building.name}, ${display(building).label}` +
+        (live ? `, ${TREND_TEXT[building.trend].toLowerCase()}` : '')
+      }
       style={({ pressed }) => [
         styles.card,
         {
@@ -32,9 +39,9 @@ export function BuildingCard({
     >
       <View style={styles.text}>
         <Text style={[styles.name, { color: t.text }]}>{building.name}</Text>
-        <TrendLabel trend={building.trend} color={t.text2} />
+        {live && <TrendLabel trend={building.trend} color={t.text2} />}
       </View>
-      <LevelBadge level={building.level} />
+      <LevelBadge rated={building} muted={muted} />
     </Pressable>
   );
 }

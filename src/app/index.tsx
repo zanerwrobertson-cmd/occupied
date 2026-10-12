@@ -7,9 +7,11 @@ import { BuildingCard } from '@/components/BuildingCard';
 import { CampusMap } from '@/components/CampusMap';
 import { ClockIcon, ListIcon, LogoMark, MapIcon, SearchIcon, StarIcon } from '@/components/Icons';
 import { SectionTitle } from '@/components/SectionTitle';
+import { StaleBanner } from '@/components/StaleBanner';
 import { Segmented } from '@/components/Segmented';
 import type { Building } from '@/data/types';
-import { minutesAgo } from '@/lib/levels';
+import { minutesAgo, quietRank } from '@/lib/levels';
+import { matchesQuery, normalize } from '@/lib/search';
 import { useFavorites } from '@/state/favorites';
 import { useOccupancy } from '@/state/occupancy';
 import { font, useTheme } from '@/theme/theme';
@@ -19,21 +21,19 @@ type Sort = 'az' | 'quiet';
 
 export default function Home() {
   const { t } = useTheme();
-  const { snapshot, now, error } = useOccupancy();
-  const { favorites } = useFavorites();
+  const { snapshot, now, error, stale } = useOccupancy();
+  const { favorites, loaded: favoritesLoaded } = useFavorites();
   const [view, setView] = useState<View_>('list');
   const [sort, setSort] = useState<Sort>('az');
   const [query, setQuery] = useState('');
 
   const buildings = useMemo(() => snapshot?.buildings ?? [], [snapshot]);
-  const q = query.trim().toLowerCase();
+  const q = normalize(query);
 
   const all = useMemo(() => {
-    const matches = buildings.filter(
-      (b) => !q || b.name.toLowerCase().includes(q) || b.short.toLowerCase().includes(q),
-    );
+    const matches = buildings.filter((b) => matchesQuery(b, q));
     return matches.sort((a, b) => {
-      if (sort === 'quiet' && a.level !== b.level) return a.level - b.level;
+      if (sort === 'quiet' && quietRank(a) !== quietRank(b)) return quietRank(a) - quietRank(b);
       return a.name.localeCompare(b.name);
     });
   }, [buildings, q, sort]);
@@ -71,6 +71,7 @@ export default function Home() {
             { value: 'map', label: 'Map', icon: (c) => <MapIcon color={c} /> },
           ]}
         />
+        {stale && <StaleBanner />}
       </View>
 
       {!snapshot ? (
@@ -82,7 +83,7 @@ export default function Home() {
           )}
         </View>
       ) : view === 'map' ? (
-        <CampusMap buildings={buildings} onOpen={open} />
+        <CampusMap buildings={buildings} muted={stale} onOpen={open} />
       ) : (
         <>
           <View style={styles.searchWrap}>
@@ -108,6 +109,9 @@ export default function Home() {
             keyboardDismissMode="on-drag"
             showsVerticalScrollIndicator={false}
           >
+            {!q && favoritesLoaded && favs.length === 0 && (
+              <Text style={[styles.hint, { color: t.text2 }]}>Tap ☆ on a building to pin it here</Text>
+            )}
             {!q && favs.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.favTitle}>
@@ -115,7 +119,7 @@ export default function Home() {
                   <SectionTitle>Favorites</SectionTitle>
                 </View>
                 {favs.map((b) => (
-                  <BuildingCard key={b.id} building={b} favorite onPress={() => open(b.id)} />
+                  <BuildingCard key={b.id} building={b} favorite muted={stale} onPress={() => open(b.id)} />
                 ))}
               </View>
             )}
@@ -135,7 +139,7 @@ export default function Home() {
                 />
               </View>
               {all.map((b) => (
-                <BuildingCard key={b.id} building={b} onPress={() => open(b.id)} />
+                <BuildingCard key={b.id} building={b} muted={stale} onPress={() => open(b.id)} />
               ))}
               {all.length === 0 && (
                 <Text style={[styles.empty, { color: t.text2, borderColor: t.border }]}>
@@ -177,6 +181,7 @@ const styles = StyleSheet.create({
   scroll: { paddingTop: 6, paddingHorizontal: 20, paddingBottom: 40, gap: 22 },
   section: { gap: 10 },
   favTitle: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  hint: { fontFamily: font.medium, fontSize: 14 },
   listHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   empty: {
     marginTop: 8,
