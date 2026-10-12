@@ -1,9 +1,23 @@
+/**
+ * ICONS — small line drawings used around the app, drawn as SVG.
+ *
+ * Every icon is drawn on a 24 × 24 grid (the `viewBox`) and then scaled to `size` pixels, so the
+ * coordinates below are positions on that 24 × 24 grid. Using our own SVGs (instead of an icon
+ * font or library) keeps the app small and lets every icon take any colour, which matters for
+ * light/dark mode.
+ *
+ * SVG shapes used:  Circle (cx, cy = centre, r = radius) · Line (x1,y1 → x2,y2)
+ *                   Polyline (connected points, open) · Polygon (connected points, closed)
+ *                   Rect (x, y, width, height, rx = corner radius)
+ */
 import Svg, { Circle, Line, Polygon, Polyline, Rect } from 'react-native-svg';
 
 import type { Trend } from '@/data/types';
 
+/** Props shared by every icon: size in pixels (each icon has its own default) and colour. */
 type P = { size?: number; color: string };
 
+/** Magnifying glass: a circle plus a short handle line. Used in the search box. */
 export function SearchIcon({ size = 20, color }: P) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.2} strokeLinecap="round">
@@ -13,6 +27,7 @@ export function SearchIcon({ size = 20, color }: P) {
   );
 }
 
+/** Clock face with hands at about 2 o'clock. Used for "Updated X min ago" and the stale banner. */
 export function ClockIcon({ size = 14, color }: P) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
@@ -22,6 +37,7 @@ export function ClockIcon({ size = 14, color }: P) {
   );
 }
 
+/** Five-point star. `filled` = a favourite (solid), otherwise just the outline. */
 export function StarIcon({ size = 24, color, filled }: P & { filled?: boolean }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth={2} strokeLinejoin="round">
@@ -30,6 +46,7 @@ export function StarIcon({ size = 24, color, filled }: P & { filled?: boolean })
   );
 }
 
+/** "<" arrow for the Back button. */
 export function ChevronLeftIcon({ size = 24, color }: P) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
@@ -38,6 +55,7 @@ export function ChevronLeftIcon({ size = 24, color }: P) {
   );
 }
 
+/** ">" arrow, e.g. on the map's "View details" button. */
 export function ChevronRightIcon({ size = 18, color }: P) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
@@ -46,6 +64,7 @@ export function ChevronRightIcon({ size = 18, color }: P) {
   );
 }
 
+/** Three lines with bullet dots — the "List" side of the List | Map switch. */
 export function ListIcon({ size = 18, color }: P) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.2} strokeLinecap="round">
@@ -59,6 +78,7 @@ export function ListIcon({ size = 18, color }: P) {
   );
 }
 
+/** Folded paper map — the "Map" side of the List | Map switch. */
 export function MapIcon({ size = 18, color }: P) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
@@ -69,13 +89,19 @@ export function MapIcon({ size = 18, color }: P) {
   );
 }
 
+/**
+ * Points for the trend arrows: [the zig-zag line, the arrowhead].
+ * up = line rising to the top-right, down = falling to the bottom-right, steady = flat line.
+ */
 const TREND_POINTS: Record<Trend, [string, string]> = {
   up: ['3 17 9 11 13 15 21 7', '15 7 21 7 21 13'],
   down: ['3 7 9 13 13 9 21 17', '15 17 21 17 21 11'],
   steady: ['3 12 21 12', '17 8 21 12 17 16'],
 };
 
+/** Small arrow showing whether a building is getting busier, quieter, or staying steady. */
 export function TrendIcon({ size = 14, color, trend }: P & { trend: Trend }) {
+  // Pick the two shapes for this trend (a = line, b = arrowhead).
   const [a, b] = TREND_POINTS[trend];
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
@@ -85,10 +111,13 @@ export function TrendIcon({ size = 14, color, trend }: P & { trend: Trend }) {
   );
 }
 
+/** The Occupied logo: a rounded square with three rising bars (like the level bars). */
 export function LogoMark({ size = 26, bg, fg }: { size?: number; bg: string; fg: string }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 26 26">
+      {/* Background tile */}
       <Rect x={1} y={1} width={24} height={24} rx={8} fill={bg} />
+      {/* Three bars, short → tall */}
       <Rect x={7} y={14} width={3} height={5} rx={1.5} fill={fg} />
       <Rect x={11.5} y={10.5} width={3} height={8.5} rx={1.5} fill={fg} />
       <Rect x={16} y={7} width={3} height={12} rx={1.5} fill={fg} />

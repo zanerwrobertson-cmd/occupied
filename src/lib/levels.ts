@@ -1,9 +1,14 @@
+/**
+ * LEVEL HELPERS — small functions for turning data into words and numbers on screen.
+ * No React here: these are plain functions, used by screens and components.
+ */
 import type { Building, Level, Status, Trend } from '@/data/types';
 
 /** First hour covered by typicalDay arrays. */
 export const DAY_START_HOUR = 7;
 export const DAY_HOURS = 17; // 7 AM → 11 PM
 
+/** What each trend is called on screen. */
 export const TREND_TEXT: Record<Trend, string> = {
   up: 'Getting busier',
   down: 'Getting quieter',
@@ -19,11 +24,14 @@ export const STATUS_TEXT: Record<Exclude<Status, 'live'>, string> = {
 
 /** "Quietest first" order: live levels, then low activity, closed, and no data last. */
 export function quietRank(b: Building): number {
-  if (b.status === 'live') return b.level;
+  if (b.status === 'live') return b.level; // 0–3
   return { low: 4, closed: 5, nodata: 6 }[b.status];
 }
 
-/** Map a 0–100 typical-day value onto a Level. */
+/**
+ * Map a 0–100 typical-day value onto a Level.
+ * Same cut-offs as the server's levelFromRatio (35 / 55 / 75 %).
+ */
 export function valueToLevel(v: number): Level {
   if (v < 35) return 0;
   if (v < 55) return 1;
@@ -37,21 +45,25 @@ export function hourIndex(hour: number): number {
   return i >= 0 && i < DAY_HOURS ? i : -1;
 }
 
+/** Short chart label: 7 → "7a", 13 → "1p", 12 → "12p". */
 export function formatHourShort(hour: number): string {
   const h = hour % 12 === 0 ? 12 : hour % 12;
   return `${h}${hour < 12 ? 'a' : 'p'}`;
 }
 
-/** 24 (closing at midnight) reads as "12 AM". */
+/** 24-hour → 12-hour text: 14 → "2 PM". 24 (closing at midnight) reads as "12 AM". */
 export function formatHourLong(hour: number): string {
   const hh = hour % 24;
   const h = hh % 12 === 0 ? 12 : hh % 12;
   return `${h} ${hh < 12 ? 'AM' : 'PM'}`;
 }
 
-/** "Busier than usual for 2 PM" etc., or null when there's no live level or outside charted hours. */
+/**
+ * "Busier than usual for 2 PM" etc., or null when there's no live level or outside charted hours.
+ * Compares the building's level now with the level its typical-day curve predicts for this hour.
+ */
 export function comparedToUsual(b: Building, hour: number): string | null {
-  if (b.status !== 'live') return null;
+  if (b.status !== 'live' || b.typicalDay?.length !== DAY_HOURS) return null;
   const i = hourIndex(hour);
   if (i < 0) return null;
   const usual = valueToLevel(b.typicalDay[i]);
@@ -61,6 +73,7 @@ export function comparedToUsual(b: Building, hour: number): string | null {
   return `About normal for ${when}`;
 }
 
+/** "Updated just now" / "Updated 6 min ago" / "Updated 2 hr ago". `ts` and `now` are epoch ms. */
 export function minutesAgo(ts: number, now: number): string {
   const m = Math.max(0, Math.round((now - ts) / 60000));
   if (m < 1) return 'Updated just now';
@@ -70,4 +83,5 @@ export function minutesAgo(ts: number, now: number): string {
   return `Updated ${h} hr ago`;
 }
 
+/** Day names, indexed like Date.getDay() (0 = Sunday). */
 export const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];

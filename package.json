@@ -21,9 +21,14 @@
     "react-native-web": "^0.21.2"
   },
   "devDependencies": {
+    "@types/jest": "29.5.14",
+    "@types/node": "^24.19.2",
     "@types/react": "~19.2.2",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~57.0.2",
+    "jest": "~29.7.0",
+    "jest-expo": "~57.0.5",
+    "tsx": "^4.23.15",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -34,7 +39,18 @@
     "typecheck": "tsc --noEmit",
     "export:web": "expo export --platform web",
     "build:web": "expo export --platform web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "test": "jest",
+    "server": "tsx --env-file-if-exists=.env.local server/index.ts",
+    "sim": "tsx --env-file-if-exists=.env.local scripts/simulator.ts",
+    "sim:backfill": "tsx --env-file-if-exists=.env.local scripts/simulator.ts --backfill=6w"
   },
-  "private": true
+  "private": true,
+  "jest": {
+    "preset": "jest-expo",
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/src/$1"
+    }
+  }
 }

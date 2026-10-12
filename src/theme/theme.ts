@@ -1,29 +1,42 @@
+/**
+ * THEME — every colour and font in the app, for both light and dark mode.
+ *
+ * Components never hard-code colours. They call useTheme() and get:
+ *   t        general colours (backgrounds, text, borders, map) for the current mode
+ *   level(l) the colours + label for a busyness level (Quiet / Moderate / Busy / Very Busy)
+ *   display  the colours + label for any building or zone — a level, or grey for
+ *            "No data yet" / "Closed" / "Low activity"
+ *
+ * The phone's system setting picks light or dark (app.json has "userInterfaceStyle": "automatic").
+ */
 import { useColorScheme } from 'react-native';
 
 import type { Level, Rated } from '@/data/types';
 import { STATUS_TEXT } from '@/lib/levels';
 
+/** General colour "tokens". Each has a light and a dark value below. */
 export type Theme = {
-  bg: string;
-  surface: string;
-  favSurface: string;
+  bg: string; // screen background
+  surface: string; // cards and panels
+  favSurface: string; // favourite cards (slightly purple)
   favBorder: string;
-  text: string;
-  text2: string;
+  text: string; // main text
+  text2: string; // secondary/grey text
   border: string;
-  track: string;
-  accent: string;
-  onAccent: string;
-  chartMuted: string;
-  mapLand: string;
+  track: string; // background of segmented controls and the stale banner
+  accent: string; // Western-ish purple for buttons and highlights
+  onAccent: string; // text on top of `accent`
+  chartMuted: string; // non-highlighted chart bars
+  mapLand: string; // map colours ↓
   mapGreen: string;
   mapRiver: string;
   mapRoad: string;
-  mapBuilding: string;
-  chipBg: string;
+  mapBuilding: string; // buildings that aren't in the app
+  chipBg: string; // map pin labels
   chipFg: string;
 };
 
+/** Colours for one busyness level (or a grey status). */
 export type LevelStyle = {
   label: string;
   /** Badge background */
@@ -38,6 +51,7 @@ export type LevelStyle = {
   pinFg: string;
 };
 
+// --- General colours -------------------------------------------------------------------------
 const light: Theme = {
   bg: '#F6F4FA',
   surface: '#FFFFFF',
@@ -80,6 +94,9 @@ const dark: Theme = {
   chipFg: '#F3F0F8',
 };
 
+// --- Level colours ---------------------------------------------------------------------------
+// Index = Level: 0 Quiet (green), 1 Moderate (yellow), 2 Busy (orange), 3 Very Busy (red).
+// Text colours were picked to be readable (4.5:1 contrast) on their backgrounds.
 const lightLevels: LevelStyle[] = [
   { label: 'Quiet', bg: '#DCF5E3', fg: '#14632F', dot: '#2FA35A', solid: '#2FA35A', pinFg: '#0B2913' },
   { label: 'Moderate', bg: '#FBF0C4', fg: '#6B5300', dot: '#D9A915', solid: '#E8B923', pinFg: '#3A2A00' },
@@ -98,6 +115,10 @@ const darkLevels: LevelStyle[] = [
 const lightNeutral: Omit<LevelStyle, 'label'> = { bg: '#ECEAF0', fg: '#4A4458', dot: '#8C8699', solid: '#8C8699', pinFg: '#FFFFFF' };
 const darkNeutral: Omit<LevelStyle, 'label'> = { bg: '#2A2633', fg: '#C9C2D6', dot: '#7D768A', solid: '#5E5870', pinFg: '#F3F0F8' };
 
+/**
+ * The hook every component uses for colours. ("Hooks" are functions starting with `use` that
+ * React re-runs on every render — so when the phone switches to dark mode, colours update.)
+ */
 export function useTheme() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const t = scheme === 'dark' ? dark : light;
@@ -108,17 +129,21 @@ export function useTheme() {
     t,
     levels,
     neutral,
+    /** Colours for a level number, e.g. level(2) → Busy's orange. */
     level: (l: Level) => levels[l],
     /**
      * Style for a building or zone: its level colours when live, otherwise neutral grey
      * with the status text. `muted` keeps the level's label and dot but greys the rest.
      */
     display: (r: Rated, muted = false): LevelStyle => {
+      // Zones from the mock don't set status; no status means live.
       const status = r.status ?? 'live';
       if (status === 'live' && r.level !== undefined) {
         const s = levels[r.level];
+        // Stale data: grey card, but keep the level's name and coloured dot.
         return muted ? { ...neutral, label: s.label, dot: s.dot } : s;
       }
+      // Not live → grey with "Closed" / "No data yet" / "Low activity".
       return { ...neutral, label: STATUS_TEXT[status === 'live' ? 'nodata' : status] };
     },
   } as const;

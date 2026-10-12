@@ -8,12 +8,25 @@
  * as SVG path strings. Run it again to pick up OSM edits or after adding a building below.
  *
  * Map data © OpenStreetMap contributors, available under the Open Database License (ODbL).
+ *
+ * STEPS
+ *   1. Download the 23 app buildings by their OSM ids (OSM_IDS below).
+ *   2. Work out a box around them (plus MARGIN_M) and download everything else inside it.
+ *   3. Convert latitude/longitude to metres on a flat grid (fine at campus scale).
+ *   4. Simplify shapes (drop points that barely change the outline) to keep the file small.
+ *   5. Write each layer as one SVG path string into src/data/campusMap.ts.
+ *
+ * Only needs to run when the map should change; the app just reads the generated file.
  */
 import { writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-/** App building id → OSM element ("w" way / "r" relation + id). */
+/**
+ * App building id → OSM element ("w" way / "r" relation + id).
+ * Find an id by clicking a building on openstreetmap.org: the URL shows e.g. /way/118764108.
+ * (A "way" is one outline; a "relation" is a building made of several outlines.)
+ */
 const OSM_IDS = {
   weldon: 'w118764108',
   taylor: 'w141710485',
@@ -45,10 +58,15 @@ const MARGIN_M = 220;
 /** Simplification tolerance, in metres. */
 const TOLERANCE_M = 0.8;
 
-/** Public Overpass servers, tried in turn — they are often busy. */
+/**
+ * Public Overpass servers, tried in turn — they are often busy.
+ * Overpass is a free read-only API for querying OpenStreetMap data.
+ */
 const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.private.coffee/api/interpreter'];
+/** Where the generated file goes (relative to this script). */
 const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'data', 'campusMap.ts');
 
+/** Run an Overpass query and return its elements. Retries up to 6 times, waiting longer each time. */
 async function overpass(query) {
   let last;
   for (let attempt = 0; attempt < 6; attempt++) {
@@ -71,8 +89,13 @@ async function overpass(query) {
 }
 
 // ---------- geometry helpers ----------
+// Plain maths on lists of points. A "ring" is a closed outline: the last point equals the first.
 
-/** Join a relation's outer/inner member ways into closed rings. */
+/**
+ * Join a relation's outer/inner member ways into closed rings.
+ * OSM sometimes splits one outline into several pieces; this glues pieces whose ends touch
+ * (flipping a piece if it runs the wrong way) until each ring closes.
+ */
 function stitch(ways) {
   const rings = [];
   const open = ways.map((w) => [...w]);
@@ -106,7 +129,12 @@ function rings(el) {
   return stitch(members.map((m) => m.geometry));
 }
 
-/** Douglas–Peucker on [x, y] points. */
+/**
+ * Douglas–Peucker on [x, y] points.
+ * Classic line-simplification: keep the two ends, find the point farthest from the straight
+ * line between them, keep it if it's more than `tol` metres away, and repeat on both halves.
+ * Points that are nearly on a straight line get dropped.
+ */
 function simplify(pts, tol) {
   if (pts.length < 4) return pts;
   const keep = new Uint8Array(pts.length);
@@ -133,12 +161,14 @@ function simplify(pts, tol) {
   return pts.filter((_, i) => keep[i]);
 }
 
+/** Signed area of a ring (shoelace formula). Used to find the biggest ring and its centre. */
 function area(pts) {
   let s = 0;
   for (let i = 0; i < pts.length - 1; i++) s += pts[i][0] * pts[i + 1][1] - pts[i + 1][0] * pts[i][1];
   return s / 2;
 }
 
+/** Centre of mass of a ring — where the app puts the building's pin. */
 function centroid(pts) {
   const a = area(pts);
   if (Math.abs(a) < 1e-6) return pts[0];
@@ -152,9 +182,11 @@ function centroid(pts) {
   return [cx / (6 * a), cy / (6 * a)];
 }
 
+/** Round to 0.1 m — plenty of precision, and keeps the file small. */
 const r1 = (n) => Math.round(n * 10) / 10;
 
 // ---------- main ----------
+// (Top-level `await` works because this is an ES module: the .mjs extension.)
 
 const wanted = Object.values(OSM_IDS);
 const byType = (t) => wanted.filter((k) => k[0] === t).map((k) => k.slice(1));
@@ -165,6 +197,7 @@ const byKey = new Map(targets.map((e) => [e.type[0] + e.id, e]));
 for (const [id, key] of Object.entries(OSM_IDS)) if (!byKey.has(key)) throw new Error(`Missing OSM ${key} for ${id}`);
 
 // Bounding box of the app's buildings, plus margin.
+// One degree of latitude is ~111 km everywhere; a degree of longitude shrinks with cos(latitude).
 const all = targets.flatMap((e) => rings(e).flat());
 const lat0 = (Math.min(...all.map((p) => p.lat)) + Math.max(...all.map((p) => p.lat))) / 2;
 const mPerLat = 111_320;
@@ -177,6 +210,7 @@ const west = Math.min(...all.map((p) => p.lon)) - dLon;
 const east = Math.max(...all.map((p) => p.lon)) + dLon;
 const bbox = `(${south},${west},${north},${east})`;
 
+// Lat/lon → metres from the box's north-west corner (x east, y south — like screen pixels).
 const project = (p) => [(p.lon - west) * mPerLon, (north - p.lat) * mPerLat];
 const width = Math.round((east - west) * mPerLon);
 const height = Math.round((north - south) * mPerLat);
@@ -207,6 +241,7 @@ function linePath(geom) {
   return pts.length < 2 ? '' : 'M' + pts.map(([x, y]) => `${r1(x)} ${r1(y)}`).join('L');
 }
 
+// Step 2: everything else in the box — other buildings, roads, paths, green space, water.
 const context = await overpass(
   `(
     way["building"]${bbox};relation["building"]${bbox};
@@ -218,14 +253,17 @@ const context = await overpass(
   );out geom;`,
 );
 
+// Which highway types count as roads (thick lines) vs footpaths (thin lines).
 const ROADS = /^(motorway|trunk|primary|secondary|tertiary|unclassified|residential|living_street|service)(_link)?$/;
 const PATHS = /^(footway|path|pedestrian|cycleway|steps)$/;
+// Sort every downloaded element into a layer.
 const layers = { green: [], water: [], river: [], roads: [], paths: [], buildings: [] };
 
 for (const el of context) {
   const key = el.type[0] + el.id;
   const tg = el.tags ?? {};
   if (tg.building) {
+    // The app's own buildings are drawn separately (coloured), so skip them here.
     if (!wanted.includes(key)) layers.buildings.push(polyPath(rings(el)));
   } else if (tg.highway && el.type === 'way') {
     if (tg.area === 'yes') continue;
@@ -240,6 +278,7 @@ for (const el of context) {
   }
 }
 
+// The app's buildings: outline + the centre of their biggest ring (for the pin).
 const buildings = {};
 for (const [id, key] of Object.entries(OSM_IDS)) {
   const rs = rings(byKey.get(key));
@@ -248,6 +287,7 @@ for (const [id, key] of Object.entries(OSM_IDS)) {
   buildings[id] = { d: polyPath(rs), x: r1(cx), y: r1(cy) };
 }
 
+// Write the TypeScript file. Each layer is all its shapes joined into one SVG path string.
 const join_ = (arr) => JSON.stringify(arr.filter(Boolean).join(''));
 const src = `// Generated by scripts/build-campus-map.mjs — do not edit by hand.
 // Map data © OpenStreetMap contributors, ODbL (https://www.openstreetmap.org/copyright).
