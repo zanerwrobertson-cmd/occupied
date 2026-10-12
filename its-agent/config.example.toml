@@ -36,8 +36,10 @@ residence_buildings = [
 ]
 
 [push]
-# Where to send the counts (the Occupied backend). http:// is only allowed for localhost testing.
-url = "http://localhost:4000/ingest"
+# Where to send the counts (the Occupied backend). http:// is only allowed for local testing.
+# Use 127.0.0.1 rather than "localhost": on Windows, localhost tries IPv6 first and each send
+# waits ~2 s before falling back.
+url = "http://127.0.0.1:4000/ingest"
 # Environment variable holding the shared ingest key.
 ingest_key_env = "OCCUPIED_INGEST_KEY"
 

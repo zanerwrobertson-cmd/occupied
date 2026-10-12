@@ -56,16 +56,16 @@ def run(cfg: Config, adapter, send: bool = True, now: datetime | None = None, se
 def validate_config(cfg: Config) -> int:
     zone_map, problems = load_zone_map(cfg.zone_map, cfg)
     for p in problems:
-        print(f"  ✗ {p}")
+        print(f"  [x] {p}")
     for name in missing_secrets(cfg):
-        print(f"  ✗ environment variable {name} is not set")
+        print(f"  [x] environment variable {name} is not set")
     zones = sorted({r.zone for r in zone_map.values() if r.zone})
     excluded = sum(1 for r in zone_map.values() if r.zone is None)
     print(f"Vendor: {cfg.vendor}")
-    print(f"Zone map: {len(zone_map)} APs → {len(zones)} zones, {excluded} APs excluded")
+    print(f"Zone map: {len(zone_map)} APs -> {len(zones)} zones, {excluded} APs excluded")
     print(f"Push to: {cfg.push_url} every {cfg.interval_minutes} min, threshold {cfg.threshold}")
     ok = not problems and not missing_secrets(cfg)
-    print("Config OK" if ok else "Config has problems (see ✗ above)")
+    print("Config OK" if ok else "Config has problems (see [x] above)")
     return OK if ok else BAD_CONFIG
 
 

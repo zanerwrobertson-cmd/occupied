@@ -7,7 +7,7 @@ ideally a fresh one so old data doesn't interfere:
     PORT=4100 DB_PATH=/tmp/e2e.db INGEST_KEY=e2e-key npm run server
 
     # then, from its-agent/
-    OCCUPIED_E2E_URL=http://localhost:4100 OCCUPIED_E2E_KEY=e2e-key python -m unittest discover -s tests -p test_e2e.py
+    OCCUPIED_E2E_URL=http://127.0.0.1:4100 OCCUPIED_E2E_KEY=e2e-key python -m unittest discover -s tests -p test_e2e.py
 
 Skipped automatically when OCCUPIED_E2E_URL isn't set.
 """

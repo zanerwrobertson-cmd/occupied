@@ -2,6 +2,6 @@
 config.toml
 zones.csv
 # Aruba sign-in token (a credential)
-aruba_token.json
+/aruba_token.json
 agent.log
 __pycache__/

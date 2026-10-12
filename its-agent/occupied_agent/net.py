@@ -90,11 +90,11 @@ class ControllerClient:
             except urllib.error.HTTPError as e:
                 # 429 (rate limited) and 5xx are worth retrying; other errors (401, 404…) are not.
                 if (e.code != 429 and e.code < 500) or attempt == RETRIES:
-                    raise RequestFailed(f"{method} {path} → HTTP {e.code}", e.code)
+                    raise RequestFailed(f"{method} {path} -> HTTP {e.code}", e.code)
                 wait = int(e.headers.get("Retry-After", BACKOFF_SECONDS[attempt]))
             except (urllib.error.URLError, TimeoutError, OSError) as e:
                 if attempt == RETRIES:
-                    raise RequestFailed(f"{method} {path} → {type(e).__name__}")
+                    raise RequestFailed(f"{method} {path} -> {type(e).__name__}")
                 wait = BACKOFF_SECONDS[attempt]
             log.debug("retrying %s %s in %ss", method, path, wait)
             time.sleep(wait)
@@ -120,9 +120,9 @@ def push(url: str, key: str, payload: dict, timeout: float, sleep=time.sleep) ->
         except urllib.error.HTTPError as e:
             # 4xx means the request itself is wrong (bad key, bad payload): retrying won't help.
             if (e.code < 500 and e.code != 429) or attempt == RETRIES:
-                raise RequestFailed(f"push → HTTP {e.code}", e.code)
+                raise RequestFailed(f"push -> HTTP {e.code}", e.code)
         except (urllib.error.URLError, TimeoutError, OSError) as e:
             if attempt == RETRIES:
-                raise RequestFailed(f"push → {type(e).__name__}")
+                raise RequestFailed(f"push -> {type(e).__name__}")
         sleep(BACKOFF_SECONDS[attempt])
     raise AssertionError("unreachable")

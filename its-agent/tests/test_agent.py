@@ -77,7 +77,7 @@ class RunTest(unittest.TestCase):
 
     def test_send_failure_skips_the_run(self):
         def failing(*args):
-            raise RequestFailed("push → HTTP 503", 503)
+            raise RequestFailed("push -> HTTP 503", 503)
 
         with self.assertLogs("occupied-agent", "ERROR") as logs:
             self.assertEqual(run(self.cfg, self.adapter, sender=failing), FAILED)
@@ -126,6 +126,21 @@ class CliTest(unittest.TestCase):
             code = main(["--config", str(ROOT / "config.example.toml"), "--validate-config"])
         self.assertEqual(code, OK, out.getvalue())
         self.assertIn("Config OK", out.getvalue())
+
+    def test_output_works_on_a_windows_console(self):
+        """Windows consoles often use cp1252, which can't print characters like → or ✗.
+        Run the real CLI in a subprocess with that encoding to make sure nothing crashes."""
+        import subprocess
+        import sys
+
+        env = {**os.environ, "PYTHONIOENCODING": "cp1252", "PYTHONUTF8": "0", "OCCUPIED_INGEST_KEY": "k"}
+        for mode in ["--validate-config", "--dry-run", "--test-connection"]:
+            result = subprocess.run(
+                [sys.executable, str(ROOT / "agent.py"), "--config", str(ROOT / "config.example.toml"), mode],
+                capture_output=True, env=env, cwd=ROOT,
+            )
+            self.assertEqual(result.returncode, OK, f"{mode}: {result.stderr.decode('cp1252', 'replace')}")
+            self.assertNotIn(b"Traceback", result.stderr)
 
     def test_bad_config_exit_code(self):
         with self.assertLogs("occupied-agent", "ERROR"):
