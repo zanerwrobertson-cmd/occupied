@@ -1,0 +1,8 @@
+{
+  "count": 2,
+  "total": 2,
+  "aps": [
+    {"name": "REC-WT-AP01", "serial": "CNBRHMV0AA", "macaddr": "20:4c:03:00:00:01", "ip_address": "10.2.2.1", "status": "Up", "client_count": 41, "site": "Main Campus"},
+    {"name": "REC-POOL-AP01", "serial": "CNBRHMV0AB", "macaddr": "20:4c:03:00:00:02", "ip_address": "10.2.2.2", "status": "Up", "client_count": 2, "site": "Main Campus"}
+  ]
+}

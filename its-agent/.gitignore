@@ -1,0 +1,7 @@
+# Real deployment files: they hold Western's AP names and settings. Only the *.example files are shared.
+config.toml
+zones.csv
+# Aruba sign-in token (a credential)
+aruba_token.json
+agent.log
+__pycache__/

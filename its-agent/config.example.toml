@@ -1,0 +1,69 @@
+# Occupied ITS agent configuration. Copy to config.toml and edit.
+#
+# Secrets never go in this file. Settings ending in _env are the NAMES of environment variables
+# that hold the secret (see SETUP.md). This file is safe to review, copy and keep in git.
+
+# Which Wi-Fi system to read from:
+#   cisco_catalyst | cisco_meraki | aruba_central | juniper_mist | csv_file
+vendor = "csv_file"
+
+# How often the scheduler runs `agent.py --once` (minutes). The schedule itself is set up in
+# cron / systemd / Task Scheduler (SETUP.md); this is used by --validate-config to show it.
+interval_minutes = 15
+
+# Zones with fewer devices than this are sent as "<10", never as an exact number. Minimum 10.
+threshold = 10
+
+# Seconds to wait for any single network request.
+timeout_seconds = 10
+
+# Which AP is in which building/floor/area (template: zones.example.csv).
+zone_map = "zones.example.csv"
+
+# Building ids the Occupied app knows about. Zones for any other building are never sent.
+allowed_buildings = [
+  "weldon", "taylor", "rec", "ucc", "ssc", "nsc", "pab", "mc", "uc", "tc", "th", "ivey",
+  "ahb", "fims", "hsb", "msb", "bgs", "chem", "seb", "teb", "aceb", "stevenson", "ncb",
+]
+
+# Residences: every AP in these buildings is always excluded, whatever zones.csv says.
+# Any building id containing "resid" is also treated as a residence.
+# TODO-verify the full list with Western Housing.
+residence_buildings = [
+  "ausable-hall", "bayfield-hall", "beaver-hall", "delaware-hall", "elgin-hall", "essex-hall",
+  "lambton-hall", "london-hall", "medway-hall", "ontario-hall", "perth-hall",
+  "saugeen-maitland-hall", "sydenham-hall", "alumni-house",
+]
+
+[push]
+# Where to send the counts (the Occupied backend). http:// is only allowed for localhost testing.
+url = "http://localhost:4000/ingest"
+# Environment variable holding the shared ingest key.
+ingest_key_env = "OCCUPIED_INGEST_KEY"
+
+[controller]
+# --- csv_file: read counts from a file (testing, or if ITS prefers to export a file) ---
+path = "sample_counts.csv"
+
+# --- cisco_catalyst (Catalyst Center / DNA Center) ---
+# base_url = "https://catalyst.example.uwo.ca"
+# username_env = "OCCUPIED_CATALYST_USER"        # a read-only OBSERVER account
+# password_env = "OCCUPIED_CATALYST_PASSWORD"
+# ca_file = "/etc/ssl/certs/uwo-internal-ca.pem"  # only if the controller uses an internal CA
+
+# --- cisco_meraki ---
+# base_url = "https://api.meraki.com/api/v1"
+# api_key_env = "OCCUPIED_MERAKI_API_KEY"         # a read-only Dashboard API key
+# org_id = "123456"
+
+# --- aruba_central ---
+# base_url = "https://apigw-prod2.central.arubanetworks.com"   # your region's API gateway
+# client_id_env = "OCCUPIED_ARUBA_CLIENT_ID"
+# client_secret_env = "OCCUPIED_ARUBA_CLIENT_SECRET"
+# refresh_token_env = "OCCUPIED_ARUBA_REFRESH_TOKEN"            # only used the first time
+# token_file = "aruba_token.json"                               # rotated refresh token is kept here
+
+# --- juniper_mist ---
+# base_url = "https://api.mist.com"                # or your region, e.g. https://api.gc1.mist.com
+# api_token_env = "OCCUPIED_MIST_API_TOKEN"        # an Observer (read-only) token
+# org_id = "00000000-0000-0000-0000-000000000000"

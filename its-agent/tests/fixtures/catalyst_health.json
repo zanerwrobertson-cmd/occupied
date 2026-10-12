@@ -1,0 +1,8 @@
+{
+  "version": "1.0",
+  "totalCount": 2,
+  "response": [
+    {"name": "SSC-AP01", "model": "C9130AXI-B", "osVersion": "17.9.4", "ipAddress": "10.3.3.1", "macAddress": "aa:bb:cc:00:00:01", "deviceType": "Cisco Catalyst 9130AXI", "overallHealth": 10, "clientCount": {"radio0": 12, "radio1": 30, "radio2": 0, "Ghz24": 12, "Ghz50": 30}},
+    {"name": "SSC-AP02", "model": "C9130AXI-B", "osVersion": "17.9.4", "ipAddress": "10.3.3.2", "macAddress": "aa:bb:cc:00:00:02", "deviceType": "Cisco Catalyst 9130AXI", "overallHealth": 9, "clientCount": {"Ghz24": 4, "Ghz50": 6}}
+  ]
+}

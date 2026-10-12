@@ -1,0 +1,4 @@
+[
+  {"name": "WEL-1-AP01", "serial": "Q2AA-AAAA-0001", "mac": "00:18:0a:00:00:01", "networkId": "N_24329156", "productType": "wireless", "model": "MR46", "lanIp": "10.0.0.11"},
+  {"name": "", "serial": "Q2AA-AAAA-0002", "mac": "00:18:0a:00:00:02", "networkId": "N_24329156", "productType": "wireless", "model": "MR46", "lanIp": "10.0.0.12"}
+]

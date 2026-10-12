@@ -1,0 +1,4 @@
+[
+  {"mac": "5c5b35000001", "name": "UCC-SPOKE-AP01", "type": "ap", "serial": "FXLH2015170017", "model": "AP43", "ip": "10.1.1.1", "status": "connected", "num_clients": 57},
+  {"mac": "5c5b35000002", "name": "", "type": "ap", "serial": "FXLH2015170018", "model": "AP43", "ip": "10.1.1.2", "status": "connected", "num_clients": 3}
+]

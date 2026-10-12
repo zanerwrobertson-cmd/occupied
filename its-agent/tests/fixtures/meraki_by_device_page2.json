@@ -1,0 +1,6 @@
+{
+  "items": [
+    {"network": {"id": "N_24329156"}, "serial": "Q2AA-AAAA-0003", "counts": {"byStatus": {"online": 12}}}
+  ],
+  "meta": {"counts": {"items": {"total": 3, "remaining": 0}}}
+}
